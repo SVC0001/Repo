@@ -1,32 +1,10 @@
 #cloud-config
 # Ubuntu Server autoinstall for OVMF / UEFI.
 #
-# Disk layout:
-#   /dev/sda or largest available disk
-#   |- partition 1       EFI System Partition, FAT32, 1 GiB
-#   |- partition 2       /boot, ext4, 1 GiB, outside LVM
-#   `- partition 3       LVM PV, all remaining disk space
-#      `- vg0
-#         |- lv_root     /, ext4, 10 GiB
-#         |- lv_home     /home, ext4, 10 GiB
-#         |- lv_tmp      /tmp, ext4, 10 GiB
-#         |- lv_swap     swap, 1 GiB
-#         `- lv_var      /var, ext4, all remaining VG space
-#
-# Other settings:
-#   - Network: DHCP on Ethernet-like interfaces.
-#   - Hostname: ubuntu-auto.
-#   - User: user / Admin@123!, password stored as SHA-512 crypt hash.
-#   - First user gets Ubuntu default admin/sudo membership; password SSH login is enabled.
-#   - Root password is also Admin@123!, but root SSH login is disabled.
-#   - Installs openssh-server, qemu-guest-agent, curl, wget, vim, net-tools, lvm2.
-#   - Proxmox note: use OVMF / UEFI firmware and add an EFI Disk to the VM.
-#   - Proxmox note: also enable the VM option with "qm set <VMID> -agent enabled=1".
-#
 # NoCloud usage:
 #   Put this file as "user-data" next to an empty "meta-data" file.
 #   Boot parameter example:
-#     autoinstall ds=nocloud-net;s=http://SERVER/ubuntu/uefi/
+#     autoinstall ds=nocloud-net;s=https://svc0001.github.io/Repo/Preseeds/ubuntu-uefi/
 
 autoinstall:
   version: 1
@@ -94,6 +72,7 @@ autoinstall:
         ptable: gpt
         wipe: superblock-recursive
         preserve: false
+        grub_device: true
 
       - id: esp-partition
         type: partition
@@ -101,9 +80,8 @@ autoinstall:
         device: root-disk
         size: 1075M
         flag: boot
-        partition_type: EF00
-        grub_device: true
         wipe: superblock
+        preserve: false
 
       - id: boot-partition
         type: partition
@@ -111,6 +89,7 @@ autoinstall:
         device: root-disk
         size: 1075M
         wipe: superblock
+        preserve: false
 
       - id: lvm-partition
         type: partition
@@ -119,6 +98,7 @@ autoinstall:
         size: -1
         flag: lvm
         wipe: superblock
+        preserve: false
 
       - id: vg0
         type: lvm_volgroup
@@ -154,41 +134,49 @@ autoinstall:
         type: lvm_partition
         name: lv_var
         volgroup: vg0
+        size: -1
 
       - id: esp-format
         type: format
         fstype: fat32
         volume: esp-partition
+        preserve: false
 
       - id: boot-format
         type: format
         fstype: ext4
         volume: boot-partition
+        preserve: false
 
       - id: root-format
         type: format
         fstype: ext4
         volume: lv-root
+        preserve: false
 
       - id: home-format
         type: format
         fstype: ext4
         volume: lv-home
+        preserve: false
 
       - id: tmp-format
         type: format
         fstype: ext4
         volume: lv-tmp
+        preserve: false
 
       - id: swap-format
         type: format
         fstype: swap
         volume: lv-swap
+        preserve: false
 
       - id: var-format
         type: format
         fstype: ext4
         volume: lv-var
+        preserve: false
 
       - id: root-mount
         type: mount
@@ -232,3 +220,4 @@ autoinstall:
     - curtin in-target --target=/target -- systemctl enable ssh
     - curtin in-target --target=/target -- systemctl enable qemu-guest-agent
 
+  shutdown: reboot

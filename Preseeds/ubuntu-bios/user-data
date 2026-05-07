@@ -24,7 +24,7 @@
 # NoCloud usage:
 #   Put this file as "user-data" next to an empty "meta-data" file.
 #   Boot parameter example:
-#     autoinstall ds=nocloud-net;s=http://SERVER/ubuntu/bios/
+#     autoinstall ds=nocloud-net;s=https://svc0001.github.io/Repo/Preseeds/ubuntu-bios/
 
 autoinstall:
   version: 1
@@ -146,36 +146,43 @@ autoinstall:
         type: lvm_partition
         name: lv_var
         volgroup: vg0
+        size: -1
 
       - id: boot-format
         type: format
         fstype: ext4
         volume: boot-partition
+        preserve: false
 
       - id: root-format
         type: format
         fstype: ext4
         volume: lv-root
+        preserve: false
 
       - id: home-format
         type: format
         fstype: ext4
         volume: lv-home
+        preserve: false
 
       - id: tmp-format
         type: format
         fstype: ext4
         volume: lv-tmp
+        preserve: false
 
       - id: swap-format
         type: format
         fstype: swap
         volume: lv-swap
+        preserve: false
 
       - id: var-format
         type: format
         fstype: ext4
         volume: lv-var
+        preserve: false
 
       - id: root-mount
         type: mount
