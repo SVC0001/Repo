@@ -1,0 +1,224 @@
+#cloud-config
+# Ubuntu Server autoinstall for Legacy BIOS / SeaBIOS.
+#
+# Disk layout:
+#   /dev/sda or largest available disk
+#   |- partition 1       /boot, ext4, 1 GiB, bootable, outside LVM
+#   `- partition 2       LVM PV, all remaining disk space
+#      `- vg0
+#         |- lv_root     /, ext4, 10 GiB
+#         |- lv_home     /home, ext4, 10 GiB
+#         |- lv_tmp      /tmp, ext4, 10 GiB
+#         |- lv_swap     swap, 1 GiB
+#         `- lv_var      /var, ext4, all remaining VG space
+#
+# Other settings:
+#   - Network: DHCP on Ethernet-like interfaces.
+#   - Hostname: ubuntu-auto.
+#   - User: user / Admin@123!, password stored as SHA-512 crypt hash.
+#   - First user gets Ubuntu default admin/sudo membership; password SSH login is enabled.
+#   - Root password is also Admin@123!, but root SSH login is disabled.
+#   - Installs openssh-server, qemu-guest-agent, curl, wget, vim, net-tools, lvm2.
+#   - Proxmox note: also enable the VM option with "qm set <VMID> -agent enabled=1".
+#
+# NoCloud usage:
+#   Put this file as "user-data" next to an empty "meta-data" file.
+#   Boot parameter example:
+#     autoinstall ds=nocloud-net;s=https://svc0001.github.io/Repo/Preseeds/ubuntu-bios/
+
+autoinstall:
+  version: 1
+  refresh-installer:
+    update: false
+
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+    variant: ""
+
+  timezone: Etc/UTC
+
+  source:
+    id: ubuntu-server
+    search_drivers: false
+
+  network:
+    version: 2
+    ethernets:
+      ethernet-dhcp:
+        match:
+          name: "e*"
+        dhcp4: true
+        dhcp6: false
+
+  apt:
+    geoip: false
+    fallback: offline-install
+    mirror-selection:
+      primary:
+        - uri: http://archive.ubuntu.com/ubuntu
+          arches: [amd64, i386]
+        - uri: http://ports.ubuntu.com/ubuntu-ports
+          arches: [arm64, armhf, ppc64el, riscv64, s390x]
+
+  identity:
+    hostname: ubuntu-auto
+    username: user
+    password: "$6$codexsalt$APXuT088Gk9leqwK2jqOlxdLtO7xbsfIuvOapi3VaFLEdikpI70ZknwuTzCpUEoqWGCR01NgyZVgeL7Wyz3W3."
+
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  packages:
+    - curl
+    - wget
+    - vim
+    - net-tools
+    - lvm2
+    - sudo
+    - qemu-guest-agent
+
+  updates: security
+
+  storage:
+    swap:
+      size: 0
+    config:
+      - id: root-disk
+        type: disk
+        match:
+          size: largest
+        ptable: msdos
+        wipe: superblock-recursive
+        preserve: false
+        grub_device: true
+
+      - id: boot-partition
+        type: partition
+        number: 1
+        device: root-disk
+        size: 1075M
+        flag: boot
+        wipe: superblock
+        preserve: false
+
+      - id: lvm-partition
+        type: partition
+        number: 2
+        device: root-disk
+        size: -1
+        flag: lvm
+        wipe: superblock
+        preserve: false
+
+      - id: vg0
+        type: lvm_volgroup
+        name: vg0
+        devices:
+          - lvm-partition
+
+      - id: lv-root
+        type: lvm_partition
+        name: lv_root
+        volgroup: vg0
+        size: 10G
+
+      - id: lv-home
+        type: lvm_partition
+        name: lv_home
+        volgroup: vg0
+        size: 10G
+
+      - id: lv-tmp
+        type: lvm_partition
+        name: lv_tmp
+        volgroup: vg0
+        size: 10G
+
+      - id: lv-swap
+        type: lvm_partition
+        name: lv_swap
+        volgroup: vg0
+        size: 1G
+
+      - id: lv-var
+        type: lvm_partition
+        name: lv_var
+        volgroup: vg0
+        size: -1
+
+      - id: boot-format
+        type: format
+        fstype: ext4
+        volume: boot-partition
+        preserve: false
+
+      - id: root-format
+        type: format
+        fstype: ext4
+        volume: lv-root
+        preserve: false
+
+      - id: home-format
+        type: format
+        fstype: ext4
+        volume: lv-home
+        preserve: false
+
+      - id: tmp-format
+        type: format
+        fstype: ext4
+        volume: lv-tmp
+        preserve: false
+
+      - id: swap-format
+        type: format
+        fstype: swap
+        volume: lv-swap
+        preserve: false
+
+      - id: var-format
+        type: format
+        fstype: ext4
+        volume: lv-var
+        preserve: false
+
+      - id: root-mount
+        type: mount
+        path: /
+        device: root-format
+
+      - id: boot-mount
+        type: mount
+        path: /boot
+        device: boot-format
+
+      - id: home-mount
+        type: mount
+        path: /home
+        device: home-format
+
+      - id: tmp-mount
+        type: mount
+        path: /tmp
+        device: tmp-format
+
+      - id: swap-mount
+        type: mount
+        path: none
+        device: swap-format
+
+      - id: var-mount
+        type: mount
+        path: /var
+        device: var-format
+
+  late-commands:
+    - ["curtin", "in-target", "--target=/target", "--", "usermod", "--password", "$6$codexsalt$APXuT088Gk9leqwK2jqOlxdLtO7xbsfIuvOapi3VaFLEdikpI70ZknwuTzCpUEoqWGCR01NgyZVgeL7Wyz3W3.", "root"]
+    - curtin in-target --target=/target -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+    - curtin in-target --target=/target -- /bin/sh -c "grep -q '^PermitRootLogin no' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config"
+    - curtin in-target --target=/target -- systemctl enable ssh
+    - curtin in-target --target=/target -- systemctl enable qemu-guest-agent
+
+  shutdown: reboot
