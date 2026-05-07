@@ -101,6 +101,7 @@ autoinstall:
         size: 1075M
         flag: boot
         wipe: superblock
+        preserve: false
 
       - id: lvm-partition
         type: partition
@@ -109,6 +110,7 @@ autoinstall:
         size: -1
         flag: lvm
         wipe: superblock
+        preserve: false
 
       - id: vg0
         type: lvm_volgroup
