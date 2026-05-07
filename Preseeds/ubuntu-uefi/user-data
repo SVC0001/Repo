@@ -185,15 +185,15 @@ autoinstall:
         path: /
         device: root-format
 
-      - id: esp-mount
-        type: mount
-        path: /boot/efi
-        device: esp-format
-
       - id: boot-mount
         type: mount
         path: /boot
         device: boot-format
+
+      - id: esp-mount
+        type: mount
+        path: /boot/efi
+        device: esp-format
 
       - id: home-mount
         type: mount
