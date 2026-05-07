@@ -16,7 +16,7 @@
 #   - Network: DHCP on Ethernet-like interfaces.
 #   - Hostname: ubuntu-auto.
 #   - User: user / Admin@123!, password stored as SHA-512 crypt hash.
-#   - User belongs to sudo group; password SSH login is enabled.
+#   - First user gets Ubuntu default admin/sudo membership; password SSH login is enabled.
 #   - Root password is also Admin@123!, but root SSH login is disabled.
 #   - Installs openssh-server, qemu-guest-agent, curl, wget, vim, net-tools, lvm2.
 #   - Proxmox note: also enable the VM option with "qm set <VMID> -agent enabled=1".
@@ -63,9 +63,8 @@ autoinstall:
 
   identity:
     hostname: ubuntu-auto
-    realname: user
     username: user
-    password: '$6$codexsalt$APXuT088Gk9leqwK2jqOlxdLtO7xbsfIuvOapi3VaFLEdikpI70ZknwuTzCpUEoqWGCR01NgyZVgeL7Wyz3W3.'
+    password: "$6$codexsalt$APXuT088Gk9leqwK2jqOlxdLtO7xbsfIuvOapi3VaFLEdikpI70ZknwuTzCpUEoqWGCR01NgyZVgeL7Wyz3W3."
 
   ssh:
     install-server: true
@@ -207,7 +206,6 @@ autoinstall:
         device: var-format
 
   late-commands:
-    - curtin in-target --target=/target -- usermod -aG sudo user
     - ["curtin", "in-target", "--target=/target", "--", "usermod", "--password", "$6$codexsalt$APXuT088Gk9leqwK2jqOlxdLtO7xbsfIuvOapi3VaFLEdikpI70ZknwuTzCpUEoqWGCR01NgyZVgeL7Wyz3W3.", "root"]
     - curtin in-target --target=/target -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
     - curtin in-target --target=/target -- /bin/sh -c "grep -q '^PermitRootLogin no' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config"
