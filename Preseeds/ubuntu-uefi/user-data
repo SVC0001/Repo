@@ -1,10 +1,5 @@
 #cloud-config
-# Ubuntu Server 22.04.5 autoinstall for OVMF / UEFI.
-#
-# NoCloud usage:
-#   Put this file as "user-data" next to an empty "meta-data" file.
-#   Boot parameter:
-#     autoinstall ipv6.disable=1 ds=nocloud-net;s=https://svc0001.github.io/Repo/Preseeds/ubuntu-uefi/
+# Ubuntu Server 22.04.5 autoinstall for Proxmox OVMF / UEFI.
 
 autoinstall:
   version: 1
@@ -72,7 +67,7 @@ autoinstall:
         ptable: gpt
         wipe: superblock-recursive
         preserve: false
-        grub_device: true
+        reorder_uefi: false
 
       - id: esp-partition
         type: partition
