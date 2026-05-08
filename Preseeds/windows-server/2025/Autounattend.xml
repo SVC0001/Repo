@@ -81,7 +81,7 @@
 
       <UserData>
         <AcceptEula>true</AcceptEula>
-        <FullName>Administrator</FullName>
+        <FullName>Admin</FullName>
         <Organization>Test</Organization>
       </UserData>
 
@@ -128,6 +128,19 @@
       </OOBE>
 
       <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+            <Password>
+              <Value>Admin@123!</Value>
+              <PlainText>true</PlainText>
+            </Password>
+            <Description>Local administrator account</Description>
+            <DisplayName>Admin</DisplayName>
+            <Group>Administrators</Group>
+            <Name>Admin</Name>
+          </LocalAccount>
+        </LocalAccounts>
+
         <AdministratorPassword>
           <Value>Admin@123!</Value>
           <PlainText>true</PlainText>
@@ -140,7 +153,7 @@
           <PlainText>true</PlainText>
         </Password>
         <Enabled>true</Enabled>
-        <Username>Administrator</Username>
+        <Username>Admin</Username>
         <LogonCount>1</LogonCount>
       </AutoLogon>
 
@@ -171,6 +184,24 @@
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>5</Order>
+          <Description>Set display resolution to 1920x1080</Description>
+          <CommandLine>powershell.exe -ExecutionPolicy Bypass -Command "$code = 'using System; using System.Runtime.InteropServices; public class Display { [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)] public struct DEVMODE { [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmDeviceName; public short dmSpecVersion; public short dmDriverVersion; public short dmSize; public short dmDriverExtra; public int dmFields; public int dmPositionX; public int dmPositionY; public int dmDisplayOrientation; public int dmDisplayFixedOutput; public short dmColor; public short dmDuplex; public short dmYResolution; public short dmTTOption; public short dmCollate; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmFormName; public short dmLogPixels; public int dmBitsPerPel; public int dmPelsWidth; public int dmPelsHeight; public int dmDisplayFlags; public int dmDisplayFrequency; public int dmICMMethod; public int dmICMIntent; public int dmMediaType; public int dmDitherType; public int dmReserved1; public int dmReserved2; public int dmPanningWidth; public int dmPanningHeight; } [DllImport(&quot;user32.dll&quot;)] public static extern int EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode); [DllImport(&quot;user32.dll&quot;)] public static extern int ChangeDisplaySettings(ref DEVMODE devMode, int flags); public static void SetResolution(int width, int height) { DEVMODE dm = new DEVMODE(); dm.dmDeviceName = new String(new char[32]); dm.dmFormName = new String(new char[32]); dm.dmSize = (short)Marshal.SizeOf(dm); EnumDisplaySettings(null, -1, ref dm); dm.dmPelsWidth = width; dm.dmPelsHeight = height; dm.dmFields = 0x80000 | 0x100000; ChangeDisplaySettings(ref dm, 0); } }'; Add-Type $code; [Display]::SetResolution(1920,1080)"</CommandLine>
+        </SynchronousCommand>
+
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>6</Order>
+          <Description>Disable IPv6</Description>
+          <CommandLine>powershell.exe -ExecutionPolicy Bypass -Command "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters' -Name 'DisabledComponents' -PropertyType DWord -Value 255 -Force; Get-NetAdapterBinding -ComponentID ms_tcpip6 | Disable-NetAdapterBinding -ComponentID ms_tcpip6"</CommandLine>
+        </SynchronousCommand>
+
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>7</Order>
+          <Description>Disable AutoLogon</Description>
+          <CommandLine>cmd.exe /c reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d 0 /f</CommandLine>
+        </SynchronousCommand>
+
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>8</Order>
           <Description>Reboot after setup</Description>
           <CommandLine>cmd.exe /c shutdown /r /t 10 /c "Reboot after automated Windows Server setup"</CommandLine>
         </SynchronousCommand>
