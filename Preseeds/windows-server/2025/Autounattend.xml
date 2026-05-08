@@ -81,7 +81,7 @@
 
       <UserData>
         <AcceptEula>true</AcceptEula>
-        <FullName>Admin</FullName>
+        <FullName>Administrator</FullName>
         <Organization>Test</Organization>
       </UserData>
 
@@ -128,19 +128,6 @@
       </OOBE>
 
       <UserAccounts>
-        <LocalAccounts>
-          <LocalAccount wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <Password>
-              <Value>Admin@123!</Value>
-              <PlainText>true</PlainText>
-            </Password>
-            <Description>Local administrator account</Description>
-            <DisplayName>Admin</DisplayName>
-            <Group>Administrators</Group>
-            <Name>Admin</Name>
-          </LocalAccount>
-        </LocalAccounts>
-
         <AdministratorPassword>
           <Value>Admin@123!</Value>
           <PlainText>true</PlainText>
@@ -153,7 +140,7 @@
           <PlainText>true</PlainText>
         </Password>
         <Enabled>true</Enabled>
-        <Username>Admin</Username>
+        <Username>Administrator</Username>
         <LogonCount>1</LogonCount>
       </AutoLogon>
 
@@ -190,12 +177,18 @@
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>6</Order>
+          <Description>Remove Windows.old folder if present</Description>
+          <CommandLine>powershell.exe -ExecutionPolicy Bypass -Command "if (Test-Path C:\Windows.old) { Remove-Item C:\Windows.old -Recurse -Force -ErrorAction SilentlyContinue }"</CommandLine>
+        </SynchronousCommand>
+
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>7</Order>
           <Description>Disable AutoLogon</Description>
           <CommandLine>cmd.exe /c reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d 0 /f</CommandLine>
         </SynchronousCommand>
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>7</Order>
+          <Order>8</Order>
           <Description>Reboot after setup</Description>
           <CommandLine>cmd.exe /c shutdown /r /t 10 /c "Reboot after automated Windows Server setup"</CommandLine>
         </SynchronousCommand>
