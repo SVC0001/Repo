@@ -153,18 +153,24 @@
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>2</Order>
-          <Description>Install QEMU Guest Agent</Description>
-          <CommandLine>cmd.exe /c if exist C:\Install\qemu-ga-x86_64.msi msiexec.exe /i C:\Install\qemu-ga-x86_64.msi /qn /norestart</CommandLine>
+          <Description>Install VirtIO Guest Tools</Description>
+          <CommandLine>cmd.exe /c mkdir C:\Logs 2&gt;nul &amp; if exist C:\Install\virtio-win-guest-tools.exe (C:\Install\virtio-win-guest-tools.exe /quiet /norestart &gt; C:\Logs\virtio-guest-tools.log 2&gt;&amp;1) else (echo virtio-win-guest-tools.exe not found &gt; C:\Logs\virtio-guest-tools-missing.log)</CommandLine>
         </SynchronousCommand>
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>3</Order>
-          <Description>Enable and start QEMU Guest Agent</Description>
-          <CommandLine>cmd.exe /c sc config QEMU-GA start= auto &amp; net start QEMU-GA</CommandLine>
+          <Description>Install QEMU Guest Agent MSI fallback</Description>
+          <CommandLine>cmd.exe /c if exist C:\Install\qemu-ga-x86_64.msi msiexec.exe /i C:\Install\qemu-ga-x86_64.msi /qn /norestart /L*v C:\Logs\qemu-ga-install.log</CommandLine>
         </SynchronousCommand>
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>4</Order>
+          <Description>Enable and start QEMU Guest Agent</Description>
+          <CommandLine>cmd.exe /c sc config QEMU-GA start= auto &amp; net start QEMU-GA &gt; C:\Logs\qemu-ga-start.log 2&gt;&amp;1</CommandLine>
+        </SynchronousCommand>
+
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>5</Order>
           <Description>Reboot after setup</Description>
           <CommandLine>cmd.exe /c shutdown /r /t 10 /c "Reboot after automated Windows Server setup"</CommandLine>
         </SynchronousCommand>
