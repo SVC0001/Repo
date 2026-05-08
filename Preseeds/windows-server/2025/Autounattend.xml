@@ -154,7 +154,7 @@
         </Password>
         <Enabled>true</Enabled>
         <Username>Admin</Username>
-        <LogonCount>2</LogonCount>
+        <LogonCount>1</LogonCount>
       </AutoLogon>
 
       <FirstLogonCommands>
@@ -190,83 +190,14 @@
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>6</Order>
-          <Description>Create post reboot setup script and task</Description>
-          <CommandLine>powershell.exe -ExecutionPolicy Bypass -Command "$script = @'
-Start-Sleep -Seconds 30
-New-Item -Path C:\Logs -ItemType Directory -Force | Out-Null
-
-try {
-  $code = @"
-using System;
-using System.Runtime.InteropServices;
-public class Display {
-  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]
-  public struct DEVMODE {
-    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmDeviceName;
-    public short dmSpecVersion;
-    public short dmDriverVersion;
-    public short dmSize;
-    public short dmDriverExtra;
-    public int dmFields;
-    public int dmPositionX;
-    public int dmPositionY;
-    public int dmDisplayOrientation;
-    public int dmDisplayFixedOutput;
-    public short dmColor;
-    public short dmDuplex;
-    public short dmYResolution;
-    public short dmTTOption;
-    public short dmCollate;
-    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmFormName;
-    public short dmLogPixels;
-    public int dmBitsPerPel;
-    public int dmPelsWidth;
-    public int dmPelsHeight;
-    public int dmDisplayFlags;
-    public int dmDisplayFrequency;
-    public int dmICMMethod;
-    public int dmICMIntent;
-    public int dmMediaType;
-    public int dmDitherType;
-    public int dmReserved1;
-    public int dmReserved2;
-    public int dmPanningWidth;
-    public int dmPanningHeight;
-  }
-
-  [DllImport("user32.dll")] public static extern int EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
-  [DllImport("user32.dll")] public static extern int ChangeDisplaySettings(ref DEVMODE devMode, int flags);
-
-  public static int SetResolution(int width, int height) {
-    DEVMODE dm = new DEVMODE();
-    dm.dmDeviceName = new String(new char[32]);
-    dm.dmFormName = new String(new char[32]);
-    dm.dmSize = (short)Marshal.SizeOf(dm);
-    EnumDisplaySettings(null, -1, ref dm);
-    dm.dmPelsWidth = width;
-    dm.dmPelsHeight = height;
-    dm.dmFields = 0x80000 | 0x100000;
-    return ChangeDisplaySettings(ref dm, 0);
-  }
-}
-"@
-
-  Add-Type $code
-  [Display]::SetResolution(1920,1080) | Out-File C:\Logs\display-resolution.log
-} catch {
-  $_ | Out-File C:\Logs\display-resolution-error.log
-}
-
-reg add 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' /v AutoAdminLogon /t REG_SZ /d 0 /f | Out-File C:\Logs\disable-autologon.log
-schtasks.exe /Delete /TN PostRebootSetup /F | Out-File C:\Logs\post-reboot-task-delete.log
-shutdown.exe /r /t 10 /c 'Final reboot after automated Windows Server setup'
-'@; Set-Content -Path C:\Install\post-reboot.ps1 -Value $script -Encoding UTF8; schtasks.exe /Create /TN PostRebootSetup /SC ONLOGON /RU Admin /RL HIGHEST /TR 'powershell.exe -ExecutionPolicy Bypass -File C:\Install\post-reboot.ps1' /F"</CommandLine>
+          <Description>Disable AutoLogon</Description>
+          <CommandLine>cmd.exe /c reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d 0 /f</CommandLine>
         </SynchronousCommand>
 
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>7</Order>
-          <Description>First reboot after driver setup</Description>
-          <CommandLine>cmd.exe /c shutdown /r /t 10 /c "First reboot after automated Windows Server setup"</CommandLine>
+          <Description>Reboot after setup</Description>
+          <CommandLine>cmd.exe /c shutdown /r /t 10 /c "Reboot after automated Windows Server setup"</CommandLine>
         </SynchronousCommand>
       </FirstLogonCommands>
 
