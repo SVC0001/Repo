@@ -1,7 +1,0 @@
-# Claude Code — не должно попадать в репозиторий
-CLAUDE.md
-**/CLAUDE.md
-.claude/
-ansible/
-obsidian/
-.gitignore
